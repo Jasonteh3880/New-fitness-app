@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AuraFit - Elite Training</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-base: #09090b;
+            --bg-surface: #18181b;
+            --bg-surface-elevated: #27272a;
+            --accent: #E0E0FE;
+            --accent-glow: rgba(224, 224, 254, 0.4);
+            --text-primary: #ffffff;
+            --text-secondary: #a1a1aa;
+            --border-color: #27272a;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background-color: var(--bg-base);
+            box-shadow: 0 0 40px rgba(0,0,0,0.5);
+        }
+
+        .top-bar {
+            padding: 20px 20px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(9, 9, 11, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 40;
+            position: relative;
+        }
+
+        .view-section {
+            display: none !important;
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 20px 100px; 
+        }
+        .view-section.active {
+            display: block !important;
+            animation: fadeInSleek 0.4s cubic-bezier(0.2, 0, 0, 1);
+        }
+        #view-builder.active {
+            display: flex !important;
+            flex-direction: column;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .sleek-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .weekly-tracker {
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 10px 0px 5px;
+        }
+        .tracker-line {
+            position: absolute;
+            top: 41px;
+            left: 7%;
+            right: 7%;
+            height: 2px;
+            background-color: var(--border-color);
+            z-index: 0;
+        }
+        .day-node {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 14.28%;
+        }
+        .day-icon {
+            font-size: 16px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            filter: grayscale(0.8) opacity(0.5);
+            transition: all 0.3s ease;
+        }
+        .day-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--bg-surface);
+            border: 2px solid var(--border-color);
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+        .day-node.status-workout .day-dot { background-color: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+        .day-node.status-workout .day-icon { filter: grayscale(0) opacity(1); transform: scale(1.1); }
+        .day-node.status-rest .day-dot { background-color: #52525b; border-color: #52525b; }
+        .day-node.status-cheat .day-dot { background-color: #ef4444; border-color: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
+        .day-node.status-cheat .day-icon { filter: grayscale(0) opacity(1); transform: scale(1.1); }
+        .day-node.is-today .day-dot { border-color: white; transform: scale(1.3); }
+        .day-name { font-size: 11px; font-weight: 700; color: var(--text-secondary); margin-top: 4px; letter-spacing: 0.5px;}
+        .day-node.is-today .day-name { color: var(--text-primary); }
+
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+        .cal-day {
+            aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border-radius: 12px; font-size: 14px; font-weight: 600; color: var(--text-primary);
+            background: transparent; cursor: pointer; transition: all 0.2s; position: relative; border: 1px solid transparent;
+        }
+        .cal-day.empty { visibility: hidden; }
+        .cal-day:hover { background: var(--bg-surface-elevated); }
+        .cal-day.selected { border-color: var(--accent); background: rgba(224, 224, 254, 0.1); }
+        .cal-day.is-today { font-weight: 800; border-color: rgba(255,255,255,0.3); }
+        .cal-dot { width: 4px; height: 4px; border-radius: 50%; position: absolute; bottom: 6px; }
+        .cal-dot.workout { background-color: var(--accent); box-shadow: 0 0 5px var(--accent-glow); }
+        .cal-dot.rest { background-color: #a1a1aa; }
+        .cal-dot.cheat { background-color: #ef4444; box-shadow: 0 0 5px rgba(239, 68, 68, 0.4); }
+
+        .btn-premium { width: 100%; padding: 16px; border-radius: 16px; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(0.2, 0, 0, 1); border: none; cursor: pointer; }
+        .btn-premium:active:not(:disabled) { transform: scale(0.96); }
+        .btn-accent { background-color: var(--accent); color: var(--bg-base); box-shadow: 0 4px 20px var(--accent-glow); }
+        .glow-badge { background: rgba(224, 224, 254, 0.1); border: 1px solid rgba(224, 224, 254, 0.2); color: var(--accent); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; box-shadow: 0 0 10px var(--accent-glow); }
+
+        .exercise-checkbox:checked + div { border-color: var(--accent); background-color: rgba(224, 224, 254, 0.05); }
+        .exercise-checkbox:checked + div .check-circle { background-color: var(--accent); border-color: var(--accent); }
+        .exercise-checkbox:checked + div .check-circle i { opacity: 1; color: var(--bg-base); }
+
+        .muscle-cut { stroke: var(--bg-surface); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+        .active-pill .muscle-cut { stroke: var(--accent); }
+
+        .bottom-nav { position: absolute; bottom: 0; width: 100%; display: flex; justify-content: space-around; padding: 16px 20px 24px; background: rgba(24, 24, 27, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid var(--border-color); z-index: 50; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-secondary); font-size: 10px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .nav-item.active { color: var(--accent); }
+        .nav-item i { font-size: 20px; transition: transform 0.3s; }
+        .nav-item.active i { transform: scale(1.1); }
+
+        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"] { -moz-appearance: textfield; }
+
+        @keyframes fadeInSleek { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .slide-hidden-right { transform: translateX(100%); opacity: 0; pointer-events: none; }
+        .slide-hidden-left { transform: translateX(-100%); opacity: 0; pointer-events: none; }
+        .slide-active { transform: translateX(0); opacity: 1; pointer-events: auto; }
+        
+        .swipe-container { position: relative; overflow: hidden; border-radius: 20px; background-color: var(--bg-surface-elevated); }
+        .swipe-actions { position: absolute; right: 0; top: 0; bottom: 0; display: flex; z-index: 0; width: 140px; }
+        .swipe-content { position: relative; z-index: 1; transition: transform 0.3s ease; background: var(--bg-surface); width: 100%; border: 1px solid var(--border-color); border-radius: 20px; padding: 12px 16px; }
+        .swiped-left .swipe-content { transform: translateX(-140px); border-color: var(--accent); }
+
+        .gemini-loader { width: 40px; height: 40px; border: 3px solid rgba(224, 224, 254, 0.3); border-top: 3px solid var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .pulse-text { animation: pulseText 2s infinite; }
+        @keyframes pulseText { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        
+        <header class="top-bar">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-[var(--text-primary)]">AuraFit</h1>
+                <p class="text-xs text-[var(--text-secondary)] mt-0.5">Elite Training</p>
+            </div>
+            <div class="glow-badge">
+                <i class="fa-solid fa-fire text-[var(--accent)] text-sm"></i>
+                <span><span id="header-streak">0</span> DAY</span>
+            </div>
+        </header>
+
+        <main id="view-dashboard" class="view-section active">
+            
+            <div class="sleek-card flex items-center gap-5 relative overflow-hidden group">
+                <div class="absolute -right-20 -top-20 w-48 h-48 bg-[var(--accent)] rounded-full blur-[80px] opacity-10 pointer-events-none transition-opacity duration-500 group-hover:opacity-20"></div>
+                <div class="w-20 h-20 shrink-0 relative group/avatar">
+                    <label for="avatar-upload" class="cursor-pointer block w-full h-full rounded-full overflow-hidden border-2 border-[var(--border-color)] relative transition-transform duration-300 group-hover/avatar:scale-105">
+                        <img id="user-avatar" src="https://api.dicebear.com/7.x/micah/svg?seed=AuraElite&backgroundColor=E0E0FE" alt="Avatar" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity backdrop-blur-sm">
+                            <i class="fa-solid fa-camera text-white text-lg"></i>
+                        </div>
+                    </label>
+                    <input type="file" id="avatar-upload" accept="image/*" class="hidden" onchange="app.handleAvatarUpload(event)">
+                    <div id="avatar-loading" class="absolute inset-0 bg-[var(--bg-surface)] rounded-full flex items-center justify-center hidden z-10">
+                        <div class="gemini-loader !w-8 !h-8 !border-2"></div>
+                    </div>
+                </div>
+                <div class="flex-1 z-10">
+                    <div class="text-[10px] font-bold text-[var(--accent)] uppercase tracking-wider mb-1">Inner Voice</div>
+                    <p id="coach-message" class="text-sm font-medium text-[var(--text-primary)] leading-relaxed">"今天也要帅气地完成训练。肌肉是最好的外衣。"</p>
+                </div>
+            </div>
+
+            <div class="mt-6 mb-2">
+                <div class="flex justify-between items-end mb-3 px-1">
+                    <h3 class="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider">This Week</h3>
+                    <div class="flex gap-3 text-[10px] font-medium text-[var(--text-secondary)]">
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[var(--accent)] shadow-[0_0_5px_var(--accent)]"></span>Workout</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#52525b]"></span>Rest</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#ef4444] shadow-[0_0_5px_#ef4444]"></span>Cheat</span>
+                    </div>
+                </div>
+                <div class="sleek-card !py-4 !px-2">
+                    <div id="weekly-tracker-container" class="weekly-tracker">
+                        <!-- JS Populates Weekly Tracker -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between mt-8 mb-4 px-1">
+                <h3 class="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Today's Focus</h3>
+            </div>
+            <div id="today-focus-container" class="mb-8">
+                <!-- JS Populates Based on Calendar Plan -->
+            </div>
+
+        </main>
+
+        <main id="view-history" class="view-section">
+            <h2 class="text-2xl font-bold mb-6 tracking-tight text-white px-1" id="cal-month-title">June 2026</h2>
+            
+            <div class="sleek-card !p-5 mb-8">
+                <div class="grid grid-cols-7 gap-1 text-center mb-4">
+                    <div class="text-[10px] font-bold text-[var(--text-secondary)]">SUN</div>
+                    <div class="text-[10px] font-bold text-[var(--text-secondary)]">MON</div>
+                    <div class="text-[10px] font-bold text-[var(--text-secondary)]">TUE</div>
+                    <div class="text-[10px] font-bold text-[var(--text-secondary)]">WED</div>
+                    <div class="text-[10px] font-bold text-[var(--text-secondary)]">THU</div>
+                    <div class="text-[10px] font-bold text-[var(--text-secondary)]">FRI</div>
+                    <div class="text-[10px] font-bold text-[var(--text-secondary)]">SAT</div>
+                </div>
+                <div id="calendar-grid" class="calendar-grid">
+                    <!-- JS Populates Calendar -->
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between mb-4 px-1">
+                <h3 class="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider" id="cal-detail-title">TODAY</h3>
+            </div>
+            <div id="cal-detail-content" class="space-y-4 mb-8">
+                <!-- JS Populates Detail or Action Cards -->
+            </div>
+            
+            <div class="flex items-center justify-between mb-4 px-1">
+                <h3 class="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider">LIFETIME STATS</h3>
+            </div>
+            <div class="sleek-card flex justify-around items-center !py-6 mb-8">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-[var(--text-primary)] mb-1" id="stat-workouts">0</div>
+                    <div class="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Workouts</div>
+                </div>
+                <div class="w-px h-12 bg-[var(--border-color)]"></div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-[var(--text-primary)] mb-1" id="stat-minutes">0</div>
+                    <div class="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Minutes</div>
+                </div>
+            </div>
+        </main>
+
+        <main id="view-builder" class="view-section relative">
+            
+            <!-- Step 0: Builder Hub Menu -->
+            <div id="builder-step-0" class="absolute inset-0 p-5 pb-28 transition-transform duration-300 ease-in-out slide-active flex flex-col pt-6 bg-[var(--bg-base)]">
+                <h2 class="text-2xl font-bold mb-6 tracking-tight text-white px-1">Build & Manage</h2>
+                
+                <div class="sleek-card flex items-center justify-between group cursor-pointer hover:border-[var(--accent)] mb-4" onclick="app.navigateBuilder(1)">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-[var(--bg-surface-elevated)] flex items-center justify-center text-[var(--accent)] group-hover:bg-[var(--accent)] group-hover:text-[var(--bg-base)] transition-colors"><i class="fa-solid fa-folder-plus text-xl"></i></div>
+                        <div><div class="font-bold text-white mb-0.5">Create New Routine</div><div class="text-xs text-[var(--text-secondary)]">Design a custom workout plan</div></div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-[var(--border-color)] group-hover:text-[var(--accent)] transition-colors"></i>
+                </div>
+
+                <div class="sleek-card flex items-center justify-between group cursor-pointer hover:border-[var(--accent)] mb-8" onclick="app.navigateBuilder(4)">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-[var(--bg-surface-elevated)] flex items-center justify-center text-[var(--accent)] group-hover:bg-[var(--accent)] group-hover:text-[var(--bg-base)] transition-colors"><i class="fa-solid fa-dumbbell text-xl"></i></div>
+                        <div><div class="font-bold text-white mb-0.5">Exercise Library</div><div class="text-xs text-[var(--text-secondary)]">View and edit exercises</div></div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-[var(--border-color)] group-hover:text-[var(--accent)] transition-colors"></i>
+                </div>
+
+                <div class="flex items-center justify-between mb-4 px-1">
+                    <h3 class="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider">My Routines</h3>
+                </div>
+                <div id="build-menus-list" class="space-y-4 mb-4 overflow-y-auto pr-1">
+                    <!-- JS Populates Custom Menus inside Builder -->
+                </div>
+            </div>
+
+            <!-- Step 1: Routine Params -->
+            <div id="builder-step-1" class="absolute inset-0 p-5 pb-28 transition-transform duration-300 ease-in-out slide-hidden-right flex flex-col pt-6 bg-[var(--bg-base)]">
+                <div class="flex items-center gap-3 mb-6 px-1">
+                    <button onclick="app.navigateBuilder(0)" class="w-10 h-10 rounded-full bg-[var(--bg-surface)] border border-[var(--border-color)] text-white flex items-center justify-center hover:text-[var(--accent)] transition-colors"><i class="fa-solid fa-arrow-left"></i></button>
+                    <h2 class="text-2xl font-bold tracking-tight text-white">Routine Identity</h2>
+                </div>
+                <div class="sleek-card !p-4 mb-auto">
+                    <div class="flex flex-col gap-4">
+                        <div><input type="text" id="new-menu-name" oninput="app.validateBuilderStep1()" placeholder="Name your routine..." class="w-full text-lg font-bold bg-transparent border-none outline-none placeholder-[var(--text-secondary)] text-white"></div>
+                        <div class="h-px w-full bg-[var(--border-color)] opacity-50"></div>
+                        <div class="flex items-center justify-between"><label class="text-xs text-[var(--text-secondary)] font-bold uppercase tracking-wide">Exercise Rest</label><div class="flex items-center gap-3"><button onclick="app.adjustSetting('new-menu-rest', -5, 5)" class="w-8 h-8 rounded-full bg-[var(--bg-base)] border border-[var(--border-color)] text-white flex items-center justify-center hover:border-[var(--accent)] transition-colors"><i class="fa-solid fa-minus text-[10px]"></i></button><span class="text-white font-bold text-base w-10 text-center"><span id="new-menu-rest">30</span>s</span><button onclick="app.adjustSetting('new-menu-rest', 5, 5)" class="w-8 h-8 rounded-full bg-[var(--bg-base)] border border-[var(--border-color)] text-white flex items-center justify-center hover:border-[var(--accent)] transition-colors"><i class="fa-solid fa-plus text-[10px]"></i></button></div></div>
+                        <div class="h-px w-full bg-[var(--border-color)] opacity-50"></div>
+                        <div class="flex items-center justify-between"><label class="text-xs text-[var(--text-secondary)] font-bold uppercase tracking-wide">Total Sets</label><div class="flex items-center gap-3"><button onclick="app.adjustSetting('new-menu-sets', -1, 1)" class="w-8 h-8 rounded-full bg-[var(--bg-base)] border border-[var(--border-color)] text-white flex items-center justify-center hover:border-[var(--accent)] transition-colors"><i class="fa-solid fa-minus text-[10px]"></i></button><span class="text-white font-bold text-base w-10 text-center" id="new-menu-sets">1</span><button onclick="app.adjustSetting('new-menu-sets', 1, 1)" class="w-8 h-8 rounded-full bg-[var(--bg-base)] border border-[var(--border-color)] text-white flex items-center justify-center hover:border-[var(--accent)] transition-colors"><i class="fa-solid fa-plus text-[10px]"></i></button></div></div>
+                        <div class="h-px w-full bg-[var(--border-color)] opacity-50"></div>
+                        <div class="flex items-center justify-between"><label class="text-xs text-[var(--text-secondary)] font-bold uppercase tracking-wide">Set Rest</label><div class="flex items-center gap-3"><button onclick="app.adjustSetting('new-menu-set-rest', -10, 10)" class="w-8 h-8 rounded-full bg-[var(--bg-base)] border border-[var(--border-color)] text-white flex items-center justify-center hover:border-[var(--accent)] transition-colors"><i class="fa-solid fa-minus text-[10px]"></i></button><span class="text-white font-bold text-base w-10 text-center"><span id="new-menu-set-rest">60</span>s</span><button onclick="app.adjustSetting('new-menu-set-rest', 10, 10)" class="w-8 h-8 rounded-full bg-[var(--bg-base)] border border-[var(--border-color)] text-white flex items-center justify-center hover:border-[var(--accent)] transition-colors"><i class="fa-solid fa-plus text-[10px]"></i></button></div></div>
+                    </div>
+                </div>
+                <button id="btn-next-step" onclick="app.navigateBuilder(2)" disabled class="btn-premium mt-4 shrink-0 mb-28 bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)] opacity-50 cursor-not-allowed transition-all duration-300">Enter Routine Name</button>
+            </div>
+
+            <!-- Step 2: Select Exercises for Routine -->
+            <div id="builder-step-2" class="absolute inset-0 p-5 pb-28 transition-transform duration-300 ease-in-out slide-hidden-right flex flex-col pt-6 bg-[var(--bg-base)]">
+                <div class="flex items-center justify-between mb-6 px-1">
+                    <div class="flex items-center gap-3"><button onclick="app.navigateBuilder(1)" class="w-10 h-10 rounded-full bg-[var(--bg-surface)] border border-[var(--border-color)] text-white flex items-center justify-center hover:text-[var(--accent)] transition-colors"><i class="fa-solid fa-arrow-left"></i></button><h2 class="text-2xl font-bold tracking-tight text-white">Select Exercises</h2></div>
+                    <button onclick="app.openCustomExercise()" class="w-10 h-10 rounded-full bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--accent)] flex items-center justify-center hover:bg-[var(--accent)] hover:text-black shadow-[0_0_15px_var(--accent-glow)] transition-all"><i class="fa-solid fa-plus"></i></button>
+                </div>
+                <div id="category-filters" class="flex gap-2 overflow-x-auto pb-2 mb-2 scrollbar-hide -mx-1 px-1"></div>
+                <div id="exercise-library" class="space-y-3 mb-4 overflow-y-auto flex-1 pb-4 pr-1"></div>
+                <button onclick="app.prepareReviewStep()" class="btn-premium btn-accent shrink-0 mb-28">Review Plan <i class="fa-solid fa-arrow-right ml-1"></i></button>
+            </div>
+
+            <!-- Step 3: Review & Reorder Plan -->
+            <div id="builder-step-3" class="absolute inset-0 p-5 pb-28 transition-transform duration-300 ease-in-out slide-hidden-right flex flex-col pt-6 bg-[var(--bg-base)]">
+                <div class="flex items-center gap-3 mb-6 px-1">
+                    <button onclick="app.navigateBuilder(2)" class="w-10 h-10 rounded-full bg-[var(--bg-surface)] border border-[var(--border-color)] text-white flex items-center justify-center hover:text-[var(--accent)] transition-colors"><i class="fa-solid fa-arrow-left"></i></button>
+                    <h2 class="text-2xl font-bold tracking-tight text-white">Review & Adjust</h2>
+                </div>
+                
+                <div class="sleek-card !p-4 mb-4 border-[var(--accent)] shadow-[0_0_15px_var(--accent-glow)]">
+                    <div class="text-sm font-bold text-white mb-1" id="review-routine-name">Routine Name</div>
+                    <div class="text-[10px] text-[var(--text-secondary)] font-medium" id="review-routine-stats">0 Sets • 0s Rest</div>
+                </div>
+
+                <div class="flex justify-between items-center mb-2 px-1">
+                    <span class="text-[10px] uppercase font-bold tracking-wider text-[var(--text-secondary)]">Drag to Reorder</span>
+                </div>
+
+                <div id="review-exercise-list" class="space-y-2 mb-4 overflow-y-auto flex-1 pb-4 pr-1">
+                    <!-- JS Populates Selected Exercises for Review -->
+                </div>
+
+                <button onclick="app.saveDraftRoutine()" class="btn-premium btn-accent shrink-0 mb-28"><i class="fa-solid fa-check mr-1"></i> Save Routine</button>
+            </div>
+
+            <!-- Step 4: Manage Exercise Library & Edit/Delete -->
+            <div id="builder-step-4" class="absolute inset-0 p-5 pb-28 transition-transform duration-300 ease-in-out slide-hidden-right flex flex-col pt-6 bg-[var(--bg-base)]">
+                <div class="flex items-center justify-between mb-6 px-1">
+                    <div class="flex items-center gap-3"><button onclick="app.navigateBuilder(0)" class="w-10 h-10 rounded-full bg-[var(--bg-surface)] border border-[var(--border-color)] text-white flex items-center justify-center hover:text-[var(--accent)] transition-colors"><i class="fa-solid fa-arrow-left"></i></button><h2 class="text-2xl font-bold tracking-tight text-white">All Exercises</h2></div>
+                    <button onclick="app.openCustomExercise()" class="w-10 h-10 rounded-full bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--accent)] flex items-center justify-center hover:bg-[var(--accent)] hover:text-black shadow-[0_0_15px_var(--accent-glow)] transition-all"><i class="fa-solid fa-plus"></i></button>
+                </div>
+                <div id="category-filters-manage" class="flex gap-2 overflow-x-auto pb-2 mb-2 scrollbar-hide -mx-1 px-1"></div>
+                <div id="manage-exercise-library" class="space-y-3 mb-28 overflow-y-auto overflow-x-hidden flex-1 pb-4 pr-1"></div>
+            </div>
+
+        </main>
+
+        <div id="workout-overlay" class="fixed inset-0 bg-[var(--bg-base)] z-50 flex flex-col hidden">
+            <div class="p-6 flex justify-between items-center bg-transparent relative z-10"><button onclick="app.endWorkout()" class="w-10 h-10 rounded-full bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-secondary)] flex items-center justify-center hover:text-white transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button><div class="text-[10px] font-bold tracking-widest text-[var(--accent)] uppercase" id="workout-header-title">WORKOUT</div><div class="w-10"></div></div>
+            <div class="flex-1 flex flex-col items-center justify-center p-6 relative">
+                <div id="exercise-visual" class="w-full max-w-[280px] aspect-square rounded-[32px] mb-10 flex items-center justify-center bg-[var(--bg-surface)] border border-[var(--border-color)] shadow-[0_10px_40px_rgba(0,0,0,0.5)] relative overflow-hidden"><div class="absolute inset-0 bg-gradient-to-br from-transparent to-black/40"></div><div id="exercise-icon-container" class="relative z-10 flex items-center justify-center"></div></div>
+                <h2 id="exercise-name" class="text-3xl font-bold text-center text-white mb-2 tracking-tight">Get Ready</h2><p id="exercise-desc" class="text-[var(--text-secondary)] text-sm mb-10 text-center font-medium max-w-[250px]">Prepare your space</p>
+                <div id="workout-action-area" class="w-full max-w-[250px]"><button id="action-btn" class="btn-premium btn-accent py-5 text-xl tracking-wide shadow-[0_10px_30px_var(--accent-glow)]">START</button></div>
+            </div>
+            <div class="h-1.5 bg-[var(--bg-surface)] w-full"><div id="workout-progress" class="h-full bg-[var(--accent)] shadow-[0_0_10px_var(--accent-glow)] transition-all duration-300 w-0"></div></div>
+        </div>
+
+        <div id="custom-ex-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 opacity-0 hidden transition-opacity duration-300">
+            <div id="custom-ex-panel" class="sleek-card w-full max-w-[320px] scale-95 transition-transform duration-300 relative border-[var(--accent)] shadow-[0_0_30px_var(--accent-glow)]">
+                <button onclick="app.closeCustomExercise()" class="absolute top-4 right-4 text-[var(--text-secondary)] hover:text-white transition-colors"><i class="fa-solid fa-xmark"></i></button>
+                <h3 class="text-xl font-bold text-white mb-6" id="ce-modal-title">New Exercise</h3>
+                <div class="space-y-4">
+                    <div><label class="text-xs text-[var(--text-secondary)] font-bold uppercase tracking-wide block mb-2">Name</label><input type="text" id="ce-name" placeholder="e.g. Handstand Pushups" class="w-full bg-[var(--bg-base)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-white outline-none focus:border-[var(--accent)] transition-colors"></div>
+                    <div><label class="text-xs text-[var(--text-secondary)] font-bold uppercase tracking-wide block mb-2">Category</label><select id="ce-category" class="w-full bg-[var(--bg-base)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-white outline-none focus:border-[var(--accent)] transition-colors appearance-none cursor-pointer"><option value="Chest">Chest</option><option value="Back">Back</option><option value="Shoulders">Shoulders</option><option value="Arms">Arms</option><option value="Core / Abs">Core / Abs</option><option value="Legs">Legs</option><option value="Cardio">Cardio</option><option value="Full Body">Full Body</option><option value="Custom" selected>Custom</option></select></div>
+                    <div><label class="text-xs text-[var(--text-secondary)] font-bold uppercase tracking-wide block mb-2">Description / Notes</label><textarea id="ce-desc" rows="3" placeholder="e.g. Keep core tight..." class="w-full bg-[var(--bg-base)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-white outline-none focus:border-[var(--accent)] transition-colors resize-none"></textarea></div>
+                    <div><label class="text-xs text-[var(--text-secondary)] font-bold uppercase tracking-wide block mb-2">Goal Type</label><div class="flex gap-3"><label class="flex-1"><input type="radio" name="ce-type" value="reps" class="peer hidden" checked><div class="text-center py-2 rounded-xl border border-[var(--border-color)] text-[var(--text-secondary)] peer-checked:bg-[var(--accent)] peer-checked:text-black peer-checked:border-[var(--accent)] font-bold text-sm cursor-pointer transition-all">Reps</div></label><label class="flex-1"><input type="radio" name="ce-type" value="time" class="peer hidden"><div class="text-center py-2 rounded-xl border border-[var(--border-color)] text-[var(--text-secondary)] peer-checked:bg-[var(--accent)] peer-checked:text-black peer-checked:border-[var(--accent)] font-bold text-sm cursor-pointer transition-all">Time (s)</div></label></div></div>
+                    <div><label class="text-xs text-[var(--text-secondary)] font-bold uppercase tracking-wide block mb-2">Amount</label><div class="flex items-center justify-between bg-[var(--bg-base)] border border-[var(--border-color)] rounded-xl px-4 py-2"><button onclick="app.adjustCEAmount(-5)" class="w-8 h-8 rounded-full bg-[var(--bg-surface)] text-white hover:text-[var(--accent)]"><i class="fa-solid fa-minus text-sm"></i></button><span id="ce-amount" class="text-xl font-bold text-white">15</span><button onclick="app.adjustCEAmount(5)" class="w-8 h-8 rounded-full bg-[var(--bg-surface)] text-white hover:text-[var(--accent)]"><i class="fa-solid fa-plus text-sm"></i></button></div></div>
+                </div>
+                <button id="ce-save-btn" onclick="app.saveCustomExercise()" class="btn-premium btn-accent mt-6 !py-3">Add to Library</button>
+            </div>
+        </div>
+
+        <div id="confirm-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4 opacity-0 hidden transition-opacity duration-300">
+            <div id="confirm-panel" class="sleek-card w-full max-w-[300px] scale-95 transition-transform duration-300 relative border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+                <div class="w-12 h-12 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center text-xl mb-4 mx-auto"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <h3 class="text-xl font-bold text-white mb-2 text-center" id="confirm-title">Delete Routine?</h3>
+                <p class="text-sm text-[var(--text-secondary)] mb-6 text-center" id="confirm-desc">This action cannot be undone.</p>
+                <div class="flex gap-3">
+                    <button onclick="app.closeConfirm()" class="flex-1 py-3 rounded-xl bg-[var(--bg-surface-elevated)] border border-[var(--border-color)] text-white font-bold transition-colors hover:text-[var(--accent)]">Cancel</button>
+                    <button id="confirm-yes-btn" class="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold transition-colors shadow-[0_4px_15px_rgba(239,68,68,0.4)]">Delete</button>
+                </div>
+            </div>
+        </div>
+
+        <nav class="bottom-nav">
+            <div class="nav-item active" onclick="app.switchTab('dashboard')" id="nav-dashboard"><i class="fa-solid fa-house"></i><span>Home</span></div>
+            <div class="nav-item" onclick="app.switchTab('history')" id="nav-history"><i class="fa-solid fa-chart-simple"></i><span>Log</span></div>
+            <div class="nav-item" onclick="app.switchTab('builder')" id="nav-builder"><i class="fa-solid fa-hammer"></i><span>Build</span></div>
+        </nav>
+
+    </div>
+
+    <script>
+        const CATEGORY_ICONS = { 'All': 'fa-border-all', 'Chest': 'fa-hand-back-fist', 'Back': 'fa-arrow-up', 'Shoulders': 'fa-dumbbell', 'Arms': 'fa-hand-fist', 'Core / Abs': 'fa-table-cells', 'Legs': 'fa-child-reaching', 'Cardio': 'fa-heart-pulse', 'Full Body': 'fa-person-running', 'Custom': 'fa-bolt' };
+
+        function getAnatomyIcon(category, isActive = false, isLarge = false) {
+            const fillColor = isActive ? "var(--accent)" : "var(--text-secondary)";
+            const sizeClass = isLarge ? "w-28 h-28 drop-shadow-[0_0_20px_var(--accent-glow)]" : "w-6 h-6";
+            let svgStart = `<svg viewBox="0 0 100 100" class="${sizeClass} transition-colors duration-300" style="color: ${fillColor};">`;
+            let path = "";
+
+            switch(category) {
+                case 'Chest':
+                case 'Core / Abs':
+                    path = `<path d="M 20 25 C 20 15, 35 15, 50 15 C 65 15, 80 15, 80 25 L 85 45 C 85 55, 75 60, 70 60 L 65 90 C 65 95, 35 95, 35 90 L 30 60 C 25 60, 15 55, 15 45 Z" fill="currentColor"/><path class="muscle-cut" d="M 25 40 C 35 45, 45 45, 50 40 C 55 45, 65 45, 75 40" /><path class="muscle-cut" d="M 50 45 L 50 85" /><path class="muscle-cut" d="M 40 55 L 60 55 M 40 70 L 60 70" />`; break;
+                case 'Arms':
+                    path = `<path d="M 30 90 L 30 50 C 30 30, 40 10, 60 10 C 80 10, 85 25, 85 30 L 70 30 C 70 20, 50 20, 50 40 C 50 50, 60 60, 70 60 C 85 60, 90 75, 90 85 Z" fill="currentColor"/><path class="muscle-cut" d="M 40 50 C 55 50, 60 30, 60 30" /><path class="muscle-cut" d="M 50 75 C 60 75, 70 65, 70 65" />`; break;
+                case 'Legs':
+                    path = `<path d="M 25 15 C 40 15, 45 20, 45 35 L 40 95 C 40 98, 20 98, 20 95 L 15 50 C 10 40, 10 15, 25 15 Z" fill="currentColor"/><path d="M 75 15 C 60 15, 55 20, 55 35 L 60 95 C 60 98, 80 98, 80 95 L 85 50 C 90 40, 90 15, 75 15 Z" fill="currentColor"/><path class="muscle-cut" d="M 30 25 L 25 75 M 35 30 C 40 45, 40 60, 35 70" /><path class="muscle-cut" d="M 70 25 L 75 75 M 65 30 C 60 45, 60 60, 65 70" />`; break;
+                case 'Back':
+                    path = `<path d="M 15 35 C 15 20, 30 15, 50 15 C 70 15, 85 20, 85 35 L 75 55 L 65 85 C 65 95, 35 95, 35 85 L 25 55 Z" fill="currentColor"/><path class="muscle-cut" d="M 50 20 L 50 85 M 30 35 C 40 50, 45 65, 45 80 M 70 35 C 60 50, 55 65, 55 80" />`; break;
+                case 'Shoulders':
+                    path = `<path d="M 30 35 C 30 25, 40 20, 50 20 C 60 20, 70 25, 70 35 L 65 80 C 65 90, 35 90, 35 80 Z" fill="currentColor"/><circle cx="25" cy="40" r="15" fill="currentColor" /><circle cx="75" cy="40" r="15" fill="currentColor" /><path class="muscle-cut" d="M 35 35 C 25 45, 20 55, 25 65 M 65 35 C 75 45, 80 55, 75 65" />`; break;
+                case 'Cardio':
+                    path = `<path d="M 50 85 C 10 55, 20 20, 40 15 C 50 12, 55 20, 55 20 C 55 20, 60 12, 70 15 C 90 20, 85 65, 50 85 Z" fill="currentColor"/><path d="M 45 15 L 45 5 C 45 5, 55 5, 55 15 Z" fill="currentColor"/><path class="muscle-cut" d="M 40 25 C 45 45, 35 65, 45 75 M 55 35 C 65 45, 60 65, 60 70" />`; break;
+                case 'Full Body':
+                case 'All':
+                default:
+                    path = `<path d="M 20 25 C 20 15, 35 15, 50 15 C 65 15, 80 15, 80 25 L 85 45 C 85 55, 75 60, 70 60 L 65 90 C 65 95, 35 95, 35 90 L 30 60 C 25 60, 15 55, 15 45 Z" fill="currentColor"/><path class="muscle-cut" d="M 25 40 C 35 45, 45 45, 50 40 C 55 45, 65 45, 75 40" /><path class="muscle-cut" d="M 50 45 L 50 85" /><path class="muscle-cut" d="M 40 55 L 60 55 M 40 70 L 60 70" />`; break;
+            }
+            return svgStart + path + `</svg>`;
+        }
+
+        const EXERCISES_DB = [
+            { id: 'ex1', name: 'Jumping Jacks', type: 'time', defaultVal: 30, desc: 'Warm up full body with a continuous jumping motion.', category: 'Cardio' },
+            { id: 'ex2', name: 'Push Ups', type: 'reps', defaultVal: 15, desc: 'Keep core tight, lower your body until chest almost touches the floor.', category: 'Chest' },
+            { id: 'ex3', name: 'Squats', type: 'reps', defaultVal: 20, desc: 'Keep weight on heels, back straight, and go down until thighs are parallel.', category: 'Legs' },
+            { id: 'ex4', name: 'Plank', type: 'time', defaultVal: 45, desc: 'Maintain a straight line from head to heels. Squeeze the core.', category: 'Core / Abs' },
+            { id: 'ex5', name: 'Burpees', type: 'reps', defaultVal: 10, desc: 'Drop to a pushup, jump feet in, and stand up with an explosive jump.', category: 'Full Body' },
+            { id: 'ex6', name: 'High Knees', type: 'time', defaultVal: 30, desc: 'Run in place, driving your knees as high as your chest.', category: 'Cardio' },
+            { id: 'ex7', name: 'Pull Ups', type: 'reps', defaultVal: 8, desc: 'Full range of motion. Pull until your chin passes the bar.', category: 'Back' },
+            { id: 'ex8', name: 'Shoulder Press', type: 'reps', defaultVal: 12, desc: 'Press weight overhead, control the descent slowly.', category: 'Shoulders' },
+            { id: 'ex9', name: 'Bicep Curls', type: 'reps', defaultVal: 15, desc: 'Keep elbows tucked in and squeeze hard at the top.', category: 'Arms' },
+            { id: 'ex10', name: 'Crunches', type: 'reps', defaultVal: 20, desc: 'Contract your abs to lift your shoulders off the ground.', category: 'Core / Abs' }
+        ];
+
+        const DEFAULT_MENU = { id: 'default', name: '全身线条雕刻', rest: 15, sets: 1, setRest: 60, exercises: [ { ...EXERCISES_DB[0] }, { ...EXERCISES_DB[2] }, { ...EXERCISES_DB[1] } ] };
+        const MOTIVATIONS = ["今天也要帅气地完成训练。肌肉是最好的外衣。", "只有极度的自律，才能换来极度的自由。", "不要觉得累，想想变强后的自己有多酷。", "痛楚是软弱离开身体的感觉。", "今天的汗水，是明天的铠甲。"];
+
+        const app = {
+            state: {
+                history: [], customMenus: [], customExercises: [], deletedExercises: [],
+                streak: 0, lastWorkoutDate: null, activeWorkout: null, avatarUrl: null,
+                currentCategoryFilter: 'All', builderSelectedExercises: [], editingExerciseId: null,
+                selectedCalendarDate: null, draftRoutine: null
+            },
+
+            init() {
+                this.loadData();
+                this.state.selectedCalendarDate = this.formatDate(new Date()); 
+                this.renderDashboard();
+                this.renderHistory();
+                this.setRandomMotivation();
+                if (this.state.avatarUrl) { const avatarEl = document.getElementById('user-avatar'); if(avatarEl) avatarEl.src = this.state.avatarUrl; }
+            },
+
+            loadData() {
+                const data = localStorage.getItem('aurafit_data');
+                if (data) {
+                    const parsed = JSON.parse(data);
+                    this.state.history = (parsed.history || []).map(h => ({ ...h, isCompleted: h.isCompleted !== undefined ? h.isCompleted : (h.duration > 0 || h.type !== 'workout') }));
+                    this.state.customMenus = parsed.customMenus || [];
+                    this.state.customExercises = parsed.customExercises || [];
+                    this.state.deletedExercises = parsed.deletedExercises || [];
+                    this.state.streak = parsed.streak || 0;
+                    this.state.lastWorkoutDate = parsed.lastWorkoutDate || null;
+                    this.state.avatarUrl = parsed.avatarUrl || null;
+                }
+                this.checkStreak();
+            },
+
+            saveData() {
+                localStorage.setItem('aurafit_data', JSON.stringify({
+                    history: this.state.history, customMenus: this.state.customMenus, customExercises: this.state.customExercises,
+                    deletedExercises: this.state.deletedExercises, streak: this.state.streak, lastWorkoutDate: this.state.lastWorkoutDate, avatarUrl: this.state.avatarUrl
+                }));
+            },
+
+            formatDate(date) { const d = new Date(date); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().split('T')[0]; },
+
+            checkStreak() {
+                const today = this.formatDate(new Date()); const last = this.state.lastWorkoutDate;
+                if (!last || last === today) return; 
+                const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+                if (last !== this.formatDate(yesterday)) { this.state.streak = 0; this.saveData(); }
+            },
+
+            setRandomMotivation() { document.getElementById('coach-message').textContent = `"${MOTIVATIONS[Math.floor(Math.random() * MOTIVATIONS.length)]}"`; },
+
+            handleAvatarUpload(event) {
+                const file = event.target.files[0]; if (!file) return;
+                const loading = document.getElementById('avatar-loading'); const img = document.getElementById('user-avatar'); loading.classList.remove('hidden');
+                setTimeout(() => {
+                    const seeds = ['Aura1', 'NeoTech', 'CyberFit', 'Grit09', 'Zenith'];
+                    const newUrl = `https://api.dicebear.com/7.x/micah/svg?seed=${seeds[Math.floor(Math.random() * seeds.length)] + Math.floor(Math.random()*100)}&backgroundColor=E0E0FE`;
+                    img.src = newUrl; this.state.avatarUrl = newUrl; this.saveData(); loading.classList.add('hidden');
+                }, 2000);
+            },
+
+            switchTab(tabId) {
+                document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+                document.getElementById(`view-${tabId}`).classList.add('active');
+                document.getElementById(`nav-${tabId}`).classList.add('active');
+                
+                if(tabId === 'builder') {
+                    document.getElementById('new-menu-name').value = '';
+                    this.state.currentCategoryFilter = 'All'; 
+                    this.state.builderSelectedExercises = []; 
+                    this.validateBuilderStep1(); 
+                    this.navigateBuilder(0); 
+                    if(this.renderBuildRoutines) this.renderBuildRoutines();
+                }
+            },
+
+            initSortable(containerId, onReorder) {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+
+                let draggingEl = null;
+
+                // 核心算法：精准计算鼠标/手指 Y 坐标，并找出它应该插入到哪个元素的前面
+                const getDragAfterElement = (y) => {
+                    // 找出容器内所有可排序的元素，但不包含当前正在拖拽的那个元素
+                    const draggableElements = [...container.querySelectorAll('.sortable-item:not(.is-dragging)')];
+
+                    return draggableElements.reduce((closest, child) => {
+                        const box = child.getBoundingClientRect();
+                        // 计算手指距离目标元素中心点的垂直偏移量
+                        const offset = y - box.top - box.height / 2;
+                        
+                        // 如果手指在元素中心点上方，且比之前记录的更靠近中心，则记录它
+                        if (offset < 0 && offset > closest.offset) {
+                            return { offset: offset, element: child };
+                        } else {
+                            return closest;
+                        }
+                    }, { offset: Number.NEGATIVE_INFINITY }).element;
+                };
+
+                const handleDragStart = (e) => {
+                    if (!e.target.closest('.drag-handle')) return;
+                    draggingEl = e.target.closest('.sortable-item');
+                    if (!draggingEl) return;
+                    
+                    // 增加 is-dragging 标记类名，并提高层级 z-50
+                    draggingEl.classList.add('opacity-50', 'scale-[0.98]', 'is-dragging', 'z-50');
+                    if (e.type === 'dragstart') { 
+                        e.dataTransfer.effectAllowed = 'move'; 
+                        if(e.dataTransfer.setData) e.dataTransfer.setData('text/html', draggingEl.innerHTML); 
+                    }
+                };
+
+                const handleDragEnd = (e) => {
+                    if (draggingEl) { 
+                        draggingEl.classList.remove('opacity-50', 'scale-[0.98]', 'is-dragging', 'z-50'); 
+                        draggingEl = null; 
+                        if(onReorder) onReorder(); 
+                    }
+                };
+
+                // ==== 桌面端鼠标事件 ====
+                container.addEventListener('dragstart', handleDragStart);
+                container.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    if (!draggingEl) return;
+                    
+                    const afterElement = getDragAfterElement(e.clientY);
+                    if (afterElement == null) {
+                        container.appendChild(draggingEl);
+                    } else {
+                        container.insertBefore(draggingEl, afterElement);
+                    }
+                });
+                container.addEventListener('dragend', handleDragEnd);
+
+                // ==== 移动端 Touch 事件 ====
+                container.addEventListener('touchstart', (e) => {
+                    if (!e.target.closest('.drag-handle')) return;
+                    draggingEl = e.target.closest('.sortable-item');
+                    if (draggingEl) {
+                        draggingEl.classList.add('opacity-50', 'scale-[0.98]', 'is-dragging', 'z-50');
+                    }
+                }, {passive: false});
+
+                container.addEventListener('touchmove', (e) => {
+                    if (!draggingEl) return;
+                    e.preventDefault(); // 阻挡默认的页面滚动
+
+                    const touchY = e.touches[0].clientY; 
+                    const afterElement = getDragAfterElement(touchY);
+                    
+                    try {
+                        // 如果下方没有元素，插入到最后；否则，精准插入到目标上方，瞬间挤开原项目
+                        if (afterElement == null) {
+                            container.appendChild(draggingEl);
+                        } else {
+                            container.insertBefore(draggingEl, afterElement);
+                        }
+                    } catch(err) {
+                        console.warn("Drag sorting collision prevented.");
+                    }
+                }, {passive: false});
+
+                container.addEventListener('touchend', handleDragEnd);
+            },
+
+            renderBuildRoutines() {
+                const menuList = document.getElementById('build-menus-list');
+                if(!menuList) return;
+                menuList.innerHTML = '';
+                if (this.state.customMenus.length === 0) {
+                    menuList.innerHTML = `<div class="text-center text-[var(--text-secondary)] text-sm py-4 italic border border-dashed border-[var(--border-color)] rounded-2xl">No custom routines yet.</div>`;
+                } else {
+                    this.state.customMenus.forEach(menu => {
+                        let exHtmlReadonly = ''; let exHtmlEdit = '';
+                        menu.exercises.forEach((ex, idx) => {
+                            exHtmlReadonly += `<div class="flex items-center justify-between py-1.5 border-b border-[var(--border-color)] last:border-0"><div class="flex items-center gap-3"><div class="w-5 h-5 rounded-full bg-[var(--bg-surface-elevated)] border border-[var(--border-color)] flex items-center justify-center text-[8px] text-[var(--text-secondary)]"><i class="fa-solid fa-bolt"></i></div><span class="text-xs font-bold text-white">${ex.name}</span></div><div class="text-xs font-bold text-[var(--accent)]">${ex.defaultVal} <span class="text-[9px] text-[var(--text-secondary)]">${ex.type === 'time' ? 'Sec' : 'Reps'}</span></div></div>`;
+                            
+                            // Edit Row with Drag Handle & Input
+                            exHtmlEdit += `
+                                <div class="sortable-item flex flex-col gap-2 bg-[var(--bg-base)] p-2 rounded-xl border border-[var(--border-color)] mb-2" data-index="${idx}" draggable="true">
+                                    <div class="flex justify-between items-center">
+                                        <div class="flex items-center gap-3">
+                                            <div class="drag-handle text-[var(--text-secondary)] cursor-grab p-1 touch-none">
+                                                <i class="fa-solid fa-grip-lines text-lg"></i>
+                                            </div>
+                                            <div class="text-[11px] font-bold text-white">${ex.name}</div>
+                                        </div>
+                                        <button type="button" onclick="app.inlinePromptRemoveEx('${menu.id}', ${idx})" class="w-6 h-6 rounded-md bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white flex justify-center items-center"><i class="fa-solid fa-xmark text-[10px]"></i></button>
+                                    </div>
+                                    <div class="flex items-center justify-between bg-[var(--bg-surface-elevated)] rounded-lg p-1.5 ml-8">
+                                        <span class="text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">${ex.type === 'time' ? 'Seconds' : 'Reps'}</span>
+                                        <input type="number" min="1" value="${ex.defaultVal}" oninput="app.inlineDirectUpdateExVal('${menu.id}', ${idx}, this.value)" class="w-16 bg-transparent text-right text-[12px] font-bold text-[var(--accent)] outline-none border-b border-[var(--border-color)] focus:border-[var(--accent)] pb-0.5">
+                                    </div>
+                                </div>
+                            `;
+                        });
+
+                        menuList.innerHTML += `
+                            <div class="swipe-container mb-3 shadow-[0_4px_10px_rgba(0,0,0,0.3)]">
+                                <div class="swipe-actions right-0 w-[80px] flex z-0 rounded-r-2xl overflow-hidden"><button type="button" onclick="app.promptDeleteRoutine('${menu.id}')" class="flex-1 bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-colors flex flex-col items-center justify-center gap-1 border-l border-[var(--border-color)]"><i class="fa-solid fa-trash text-lg"></i><span class="text-[9px] uppercase font-bold tracking-wider">Delete</span></button></div>
+                                <div class="swipe-content flex flex-col cursor-grab active:cursor-grabbing" ontouchstart="app.handleSwipeStart(event)" ontouchend="app.handleSwipeEnd(event)" onmousedown="app.handleSwipeStart(event)" onmouseup="app.handleSwipeEnd(event)">
+                                    <div class="flex justify-between items-center w-full"><div class="flex items-center gap-4 pointer-events-none"><div class="w-10 h-10 rounded-full bg-[var(--bg-surface-elevated)] border border-[var(--border-color)] flex items-center justify-center text-[var(--accent)]"><i class="fa-solid fa-dumbbell"></i></div><div><div class="font-bold text-white text-sm mb-0.5 routine-title-text" id="title-${menu.id}">${menu.name}</div><div class="text-[10px] text-[var(--text-secondary)] routine-summary-text" id="summary-${menu.id}">${menu.sets} Sets • ${menu.exercises.length} Moves</div></div></div><div class="flex flex-col items-center opacity-50 pointer-events-none"><i class="fa-solid fa-chevron-down text-xs transition-transform duration-300"></i></div></div>
+                                    
+                                    <div class="ex-description hidden mt-4 pt-3 border-t border-[var(--border-color)]">
+                                        <div class="flex justify-between items-center mb-3"><span class="text-[10px] text-[var(--text-secondary)] uppercase font-bold tracking-widest">Plan Overview</span><button type="button" onclick="app.toggleInlineEdit('${menu.id}')" class="w-8 h-8 rounded-full bg-[var(--bg-surface-elevated)] text-[var(--accent)] hover:text-black hover:bg-[var(--accent)] transition-all flex items-center justify-center shadow-[0_0_10px_var(--accent-glow)] z-10 pointer-events-auto"><i class="fa-solid fa-pen text-xs" id="edit-icon-${menu.id}"></i></button></div>
+                                        <div id="readonly-${menu.id}" class="block pointer-events-none">
+                                            <div class="grid grid-cols-3 gap-2 mb-4"><div class="bg-[var(--bg-base)] p-2 rounded-lg border border-[var(--border-color)] flex flex-col items-center shadow-inner"><div class="text-[8px] text-[var(--text-secondary)] uppercase font-bold mb-1">Ex Rest</div><div class="text-[11px] font-bold text-[var(--accent)]" id="ro-rest-${menu.id}">${menu.rest}s</div></div><div class="bg-[var(--bg-base)] p-2 rounded-lg border border-[var(--border-color)] flex flex-col items-center shadow-inner"><div class="text-[8px] text-[var(--text-secondary)] uppercase font-bold mb-1">Sets</div><div class="text-[11px] font-bold text-[var(--accent)]" id="ro-sets-${menu.id}">${menu.sets}</div></div><div class="bg-[var(--bg-base)] p-2 rounded-lg border border-[var(--border-color)] flex flex-col items-center shadow-inner"><div class="text-[8px] text-[var(--text-secondary)] uppercase font-bold mb-1">Set Rest</div><div class="text-[11px] font-bold text-[var(--accent)]" id="ro-setrest-${menu.id}">${menu.setRest}s</div></div></div>
+                                            <div class="text-[9px] uppercase font-bold text-[var(--text-secondary)] mb-2 tracking-wider">Exercise List</div><div class="space-y-1">${exHtmlReadonly}</div>
+                                        </div>
+                                        <div id="editmode-${menu.id}" class="hidden space-y-4">
+                                            <div><label class="text-[9px] text-[var(--text-secondary)] uppercase font-bold tracking-widest mb-1 block">Routine Name</label><input type="text" value="${menu.name}" oninput="app.inlineUpdateName('${menu.id}', this.value)" class="w-full bg-[var(--bg-surface-elevated)] border border-[var(--border-color)] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[var(--accent)] transition-colors pointer-events-auto"></div>
+                                            <div class="grid grid-cols-1 gap-2">
+                                                <div class="flex items-center justify-between bg-[var(--bg-base)] px-3 py-2 rounded-xl border border-[var(--border-color)]"><span class="text-[10px] text-[var(--text-secondary)] uppercase font-bold">Ex Rest (s)</span><div class="flex items-center gap-3"><button type="button" onclick="app.inlineAdjust('${menu.id}', 'rest', -5, 5)" class="w-7 h-7 rounded-full bg-[var(--bg-surface-elevated)] text-white hover:text-[var(--accent)] flex justify-center items-center pointer-events-auto"><i class="fa-solid fa-minus text-[10px]"></i></button><span class="text-[12px] font-bold text-white w-6 text-center" id="ed-rest-${menu.id}">${menu.rest}</span><button type="button" onclick="app.inlineAdjust('${menu.id}', 'rest', 5, 5)" class="w-7 h-7 rounded-full bg-[var(--bg-surface-elevated)] text-white hover:text-[var(--accent)] flex justify-center items-center pointer-events-auto"><i class="fa-solid fa-plus text-[10px]"></i></button></div></div>
+                                                <div class="flex items-center justify-between bg-[var(--bg-base)] px-3 py-2 rounded-xl border border-[var(--border-color)]"><span class="text-[10px] text-[var(--text-secondary)] uppercase font-bold">Total Sets</span><div class="flex items-center gap-3"><button type="button" onclick="app.inlineAdjust('${menu.id}', 'sets', -1, 1)" class="w-7 h-7 rounded-full bg-[var(--bg-surface-elevated)] text-white hover:text-[var(--accent)] flex justify-center items-center pointer-events-auto"><i class="fa-solid fa-minus text-[10px]"></i></button><span class="text-[12px] font-bold text-white w-6 text-center" id="ed-sets-${menu.id}">${menu.sets}</span><button type="button" onclick="app.inlineAdjust('${menu.id}', 'sets', 1, 1)" class="w-7 h-7 rounded-full bg-[var(--bg-surface-elevated)] text-white hover:text-[var(--accent)] flex justify-center items-center pointer-events-auto"><i class="fa-solid fa-plus text-[10px]"></i></button></div></div>
+                                                <div class="flex items-center justify-between bg-[var(--bg-base)] px-3 py-2 rounded-xl border border-[var(--border-color)]"><span class="text-[10px] text-[var(--text-secondary)] uppercase font-bold">Set Rest (s)</span><div class="flex items-center gap-3"><button type="button" onclick="app.inlineAdjust('${menu.id}', 'setRest', -10, 10)" class="w-7 h-7 rounded-full bg-[var(--bg-surface-elevated)] text-white hover:text-[var(--accent)] flex justify-center items-center pointer-events-auto"><i class="fa-solid fa-minus text-[10px]"></i></button><span class="text-[12px] font-bold text-white w-6 text-center" id="ed-setrest-${menu.id}">${menu.setRest}</span><button type="button" onclick="app.inlineAdjust('${menu.id}', 'setRest', 10, 10)" class="w-7 h-7 rounded-full bg-[var(--bg-surface-elevated)] text-white hover:text-[var(--accent)] flex justify-center items-center pointer-events-auto"><i class="fa-solid fa-plus text-[10px]"></i></button></div></div>
+                                            </div>
+                                            <div class="text-[9px] uppercase font-bold text-[var(--text-secondary)] mb-2 tracking-wider mt-4">Edit Exercises</div>
+                                            <div id="editmode-list-${menu.id}" class="pointer-events-auto">${exHtmlEdit}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    // Init Sortable logic for all inline lists
+                    setTimeout(() => {
+                        this.state.customMenus.forEach(m => { app.initSortable(`editmode-list-${m.id}`, () => app.updateRoutineOrder(m.id)); });
+                    }, 50);
+                }
+            },
+
+            toggleInlineEdit(menuId) {
+                const readonlyDiv = document.getElementById(`readonly-${menuId}`);
+                const editmodeDiv = document.getElementById(`editmode-${menuId}`);
+                const icon = document.getElementById(`edit-icon-${menuId}`);
+                if (readonlyDiv.classList.contains('hidden')) {
+                    this.renderBuildRoutines(); 
+                    setTimeout(() => {
+                        const newCard = document.querySelector(`#title-${menuId}`).closest('.swipe-content');
+                        newCard.querySelector('.ex-description').classList.remove('hidden');
+                        newCard.querySelector('.fa-chevron-down').classList.replace('fa-chevron-down', 'fa-chevron-up');
+                    }, 10);
+                } else {
+                    readonlyDiv.classList.add('hidden'); editmodeDiv.classList.remove('hidden');
+                    icon.className = 'fa-solid fa-check text-xs text-green-400';
+                }
+            },
+
+            inlineAdjust(menuId, field, delta, min) {
+                const menu = this.state.customMenus.find(m => m.id === menuId); if(!menu) return;
+                menu[field] = Math.max(min, menu[field] + delta); this.saveData();
+                document.getElementById(`ed-${field.toLowerCase()}-${menuId}`).textContent = menu[field];
+                document.getElementById(`ro-${field.toLowerCase()}-${menuId}`).textContent = menu[field] + (field === 'sets' ? '' : 's');
+                if(field === 'sets') document.getElementById(`summary-${menuId}`).textContent = `${menu.sets} Sets • ${menu.exercises.length} Moves`;
+            },
+            inlineUpdateName(menuId, newName) {
+                const menu = this.state.customMenus.find(m => m.id === menuId); if(!menu) return;
+                if(newName.trim() === '') newName = 'Unnamed Routine'; menu.name = newName; this.saveData();
+                document.getElementById(`title-${menuId}`).textContent = newName;
+            },
+            inlineDirectUpdateExVal(menuId, exIndex, newValue) {
+                const menu = this.state.customMenus.find(m => m.id === menuId); if(!menu || !menu.exercises[exIndex]) return;
+                let val = parseInt(newValue); if (isNaN(val) || val < 1) val = 1; 
+                menu.exercises[exIndex].defaultVal = val; this.saveData();
+            },
+            
+            // Reordering for Inline Edit
+            updateRoutineOrder(menuId) {
+                const menu = this.state.customMenus.find(m => m.id === menuId); if(!menu) return;
+                const container = document.getElementById(`editmode-list-${menuId}`);
+                const newOrderIndices = Array.from(container.children).map(el => parseInt(el.getAttribute('data-index')));
+                const newExercises = newOrderIndices.map(idx => menu.exercises[idx]);
+                menu.exercises = newExercises;
+                this.saveData();
+                // Update summary silently
+                document.getElementById(`summary-${menuId}`).textContent = `${menu.sets} Sets • ${menu.exercises.length} Moves`;
+                // To keep IDs aligned, let's refresh but keep it open in edit mode
+                this.refreshInlineEdit(menuId);
+            },
+
+            refreshInlineEdit(menuId) {
+                this.renderBuildRoutines();
+                setTimeout(() => {
+                    const newCard = document.querySelector(`#title-${menuId}`).closest('.swipe-content');
+                    newCard.querySelector('.ex-description').classList.remove('hidden');
+                    const chevron = newCard.querySelector('.fa-chevron-down');
+                    if(chevron) chevron.classList.replace('fa-chevron-down', 'fa-chevron-up');
+                    newCard.querySelector(`#readonly-${menuId}`).classList.add('hidden');
+                    newCard.querySelector(`#editmode-${menuId}`).classList.remove('hidden');
+                    newCard.querySelector(`#edit-icon-${menuId}`).className = 'fa-solid fa-check text-xs text-green-400';
+                }, 10);
+            },
+
+            navigateBuilder(targetStep) {
+                const steps = [ document.getElementById('builder-step-0'), document.getElementById('builder-step-1'), document.getElementById('builder-step-2'), document.getElementById('builder-step-3'), document.getElementById('builder-step-4') ];
+                if (targetStep === 2) { const name = document.getElementById('new-menu-name').value.trim(); if (!name) return; }
+                steps.forEach((el, index) => {
+                    if (!el) return;
+                    if (index === targetStep) el.className = "absolute inset-0 p-5 pb-28 transition-transform duration-300 ease-in-out slide-active flex flex-col pt-6 bg-[var(--bg-base)]";
+                    else if (index < targetStep) el.className = "absolute inset-0 p-5 pb-28 transition-transform duration-300 ease-in-out slide-hidden-left flex flex-col pt-6 bg-[var(--bg-base)]";
+                    else el.className = "absolute inset-0 p-5 pb-28 transition-transform duration-300 ease-in-out slide-hidden-right flex flex-col pt-6 bg-[var(--bg-base)]";
+                });
+                if (targetStep === 2) this.renderBuilder();
+                if (targetStep === 3) this.renderReviewStep();
+                if (targetStep === 4) this.renderManageLibrary();
+            },
+
+            validateBuilderStep1() {
+                const name = document.getElementById('new-menu-name').value.trim(); const btn = document.getElementById('btn-next-step');
+                if (name) { btn.disabled = false; btn.className = "btn-premium btn-accent mt-4 shrink-0 mb-28 transition-all duration-300"; btn.innerHTML = 'Next <i class="fa-solid fa-arrow-right ml-1"></i>'; } 
+                else { btn.disabled = true; btn.className = "btn-premium mt-4 shrink-0 mb-28 bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)] opacity-50 cursor-not-allowed transition-all duration-300"; btn.innerHTML = 'Enter Routine Name'; }
+            },
+
+            prepareReviewStep() {
+                if(this.state.builderSelectedExercises.length === 0) {
+                    const btn = document.querySelector('#builder-step-2 .btn-premium'); const origHtml = btn.innerHTML;
+                    btn.innerHTML = 'Select at least 1 !'; btn.classList.add('!bg-red-500', '!shadow-[0_4px_20px_rgba(239,68,68,0.4)]');
+                    setTimeout(() => { btn.innerHTML = origHtml; btn.classList.remove('!bg-red-500', '!shadow-[0_4px_20px_rgba(239,68,68,0.4)]'); }, 2000);
+                    return;
+                }
+                const name = document.getElementById('new-menu-name').value.trim();
+                const rest = parseInt(document.getElementById('new-menu-rest').textContent);
+                const sets = parseInt(document.getElementById('new-menu-sets').textContent);
+                const setRest = parseInt(document.getElementById('new-menu-set-rest').textContent);
+                
+                const allExercises = this.getAllExercises();
+                const exercises = this.state.builderSelectedExercises.map(id => ({ ...allExercises.find(ex => ex.id === id) }));
+
+                this.state.draftRoutine = { name, rest, sets, setRest, exercises };
+                this.navigateBuilder(3);
+            },
+
+            renderReviewStep() {
+                document.getElementById('review-routine-name').textContent = this.state.draftRoutine.name;
+                document.getElementById('review-routine-stats').textContent = `${this.state.draftRoutine.sets} Sets • ${this.state.draftRoutine.exercises.length} Exercises`;
+                
+                const container = document.getElementById('review-exercise-list');
+                container.innerHTML = '';
+                
+                this.state.draftRoutine.exercises.forEach((ex, idx) => {
+                    // 更紧凑的卡片设计 (!p-2 代替 !p-3 等)
+                    container.innerHTML += `
+                        <div class="sortable-item flex flex-col gap-2 bg-[var(--bg-base)] p-2 rounded-xl border border-[var(--border-color)] mb-2" data-index="${idx}" draggable="true">
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center gap-3">
+                                    <div class="drag-handle text-[var(--text-secondary)] cursor-grab p-1 touch-none">
+                                        <i class="fa-solid fa-grip-lines text-lg"></i>
+                                    </div>
+                                    <div class="text-[11px] font-bold text-white">${ex.name}</div>
+                                </div>
+                                <button type="button" onclick="app.draftRemoveEx(${idx})" class="w-6 h-6 rounded-md bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white flex justify-center items-center"><i class="fa-solid fa-xmark text-[10px]"></i></button>
+                            </div>
+                            <div class="flex items-center justify-between bg-[var(--bg-surface-elevated)] rounded-lg p-1.5 ml-8">
+                                <span class="text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">${ex.type === 'time' ? 'Seconds' : 'Reps'}</span>
+                                <input type="number" min="1" value="${ex.defaultVal}" oninput="app.draftUpdateExVal(${idx}, this.value)" class="w-16 bg-transparent text-right text-[12px] font-bold text-[var(--accent)] outline-none border-b border-[var(--border-color)] focus:border-[var(--accent)] pb-0.5">
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                // 渲染后初始化拖拽功能，绑定专属的更新数据方法
+                setTimeout(() => { 
+                    this.initSortable('review-exercise-list', () => this.updateDraftOrder()); 
+                }, 50);
+            },
+
+            // 同步 DOM 顺序到内存数据数组
+            updateDraftOrder() {
+                const container = document.getElementById('review-exercise-list');
+                // 根据当前 DOM 元素排列顺序，提取它们原本绑定的 data-index
+                const newOrderIndices = Array.from(container.children).map(el => parseInt(el.getAttribute('data-index')));
+                
+                // 根据新的索引顺序，重新排列内存中的 exercises 数组
+                const newExercises = newOrderIndices.map(idx => this.state.draftRoutine.exercises[idx]);
+                this.state.draftRoutine.exercises = newExercises;
+                
+                // 重新渲染以更新 data-index 属性，确保下一次操作正确
+                this.renderReviewStep(); 
+            },
+
+            draftUpdateExVal(idx, newValue) {
+                let val = parseInt(newValue); if (isNaN(val) || val < 1) val = 1; 
+                this.state.draftRoutine.exercises[idx].defaultVal = val;
+            },
+
+            draftRemoveEx(idx) {
+                this.state.draftRoutine.exercises.splice(idx, 1);
+                if(this.state.draftRoutine.exercises.length === 0) { this.navigateBuilder(2); return; } // Kick back if empty
+                this.renderReviewStep();
+            },
+
+            saveDraftRoutine() {
+                if(!this.state.draftRoutine || this.state.draftRoutine.exercises.length === 0) return;
+                this.state.customMenus.push({ id: 'menu_' + Date.now(), ...this.state.draftRoutine });
+                this.saveData(); this.renderDashboard();
+                this.state.draftRoutine = null;
+                document.querySelectorAll('.exercise-checkbox').forEach(cb => cb.checked = false);
+                this.switchTab('dashboard');
+            },
+
+            getAllExercises() {
+                const map = new Map();
+                EXERCISES_DB.forEach(ex => { if (!this.state.deletedExercises.includes(ex.id)) map.set(ex.id, {...ex}); });
+                this.state.customExercises.forEach(ex => map.set(ex.id, {...ex})); return Array.from(map.values());
+            },
+
+            renderDashboard() {
+                document.getElementById('header-streak').textContent = this.state.streak;
+                this.renderWeeklyTracker();
+                this.renderTodayFocus();
+            },
+
+            renderWeeklyTracker() {
+                const container = document.getElementById('weekly-tracker-container'); if(!container) return;
+                container.innerHTML = '<div class="tracker-line"></div>'; 
+                const today = new Date(); const monday = new Date(today.getTime()); monday.setDate(today.getDate() + (today.getDay() === 0 ? -6 : 1 - today.getDay()));
+                const daysNames = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date(monday.getTime()); d.setDate(monday.getDate() + i); const dateStr = this.formatDate(d);
+                    const isToday = dateStr === this.formatDate(today); const record = this.state.history.find(h => h.date === dateStr);
+                    let status = record ? record.type : 'rest'; if (i === 6 && !record) status = 'cheat'; 
+                    let icon = status === 'workout' ? '💪' : (status === 'cheat' ? '🍔' : '💤'); 
+                    container.innerHTML += `<div class="day-node ${isToday ? 'is-today' : ''} status-${status}"><div class="day-icon">${icon}</div><div class="day-dot"></div><span class="day-name">${daysNames[i]}</span></div>`;
+                }
+            },
+
+            renderTodayFocus() {
+                const focusContainer = document.getElementById('today-focus-container'); if (!focusContainer) return;
+                const todayStr = this.formatDate(new Date()); const todayPlan = this.state.history.find(h => h.date === todayStr);
+
+                if (!todayPlan) {
+                    focusContainer.innerHTML = `<div class="sleek-card border-dashed border-[var(--border-color)] flex flex-col items-center justify-center !py-8 bg-transparent"><i class="fa-solid fa-calendar-day text-3xl text-[var(--text-secondary)] mb-3"></i><h4 class="font-bold text-white mb-1">No Plan Set</h4><p class="text-xs text-[var(--text-secondary)] mb-5">Set your focus for today in the Log.</p><button onclick="app.switchTab('history')" class="px-6 py-2.5 rounded-full bg-[var(--bg-surface-elevated)] border border-[var(--border-color)] text-[var(--accent)] font-bold text-sm hover:bg-[var(--accent)] hover:text-black transition-colors shadow-[0_0_10px_var(--accent-glow)]">Plan Today</button></div>`;
+                } else if (todayPlan.type === 'workout') {
+                    if (todayPlan.isCompleted) {
+                        focusContainer.innerHTML = `<div class="sleek-card bg-gradient-to-br from-[var(--bg-surface-elevated)] to-[var(--bg-base)] border-[var(--accent)] shadow-[0_0_15px_var(--accent-glow)]"><div class="flex items-center gap-5"><div class="w-14 h-14 rounded-full bg-[var(--accent)] flex items-center justify-center text-black text-2xl shadow-[0_0_10px_var(--accent-glow)]"><i class="fa-solid fa-check"></i></div><div><h4 class="font-bold text-xl text-white">Workout Complete!</h4><p class="text-[var(--accent)] font-semibold text-sm mt-1">${todayPlan.menuName} • ${Math.round(todayPlan.duration/60)} min</p></div></div></div>`;
+                    } else {
+                        let menu = todayPlan.menuId === 'default' ? DEFAULT_MENU : this.state.customMenus.find(m => m.id === todayPlan.menuId);
+                        if (!menu) menu = DEFAULT_MENU; const totalMins = Math.ceil(menu.exercises.length * menu.sets * 1.5);
+                        focusContainer.innerHTML = `<div class="sleek-card bg-gradient-to-br from-[var(--bg-surface)] to-[var(--bg-base)] border-[var(--border-color)] relative overflow-hidden"><div class="absolute -right-10 -top-10 text-[var(--accent)] opacity-5"><i class="fa-solid fa-dumbbell text-[120px]"></i></div><div class="relative z-10"><h4 class="font-bold text-2xl mb-1 text-white">${menu.name}</h4><p class="text-[var(--text-secondary)] text-sm mb-6">${menu.sets} Sets • Planned Routine</p><div class="flex items-center gap-6 mb-6"><div class="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)]"><i class="fa-regular fa-clock text-[var(--accent)]"></i> ~${totalMins} MIN</div><div class="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)]"><i class="fa-solid fa-fire text-[var(--accent)]"></i> ${menu.exercises.length * menu.sets} ACTIONS</div></div><button onclick="app.startWorkout('${menu.id}')" class="btn-premium btn-accent"><i class="fa-solid fa-play mr-2"></i> Start Workout</button></div></div>`;
+                    }
+                } else if (todayPlan.type === 'rest') { focusContainer.innerHTML = `<div class="sleek-card flex items-center gap-5 !py-6 border-[#52525b]"><div class="w-14 h-14 rounded-full bg-[#52525b] flex items-center justify-center text-white text-2xl"><i class="fa-solid fa-bed"></i></div><div><div class="font-bold text-white text-xl">Rest Day</div><div class="text-xs text-[var(--text-secondary)] mt-1">Recovery is growth.</div></div></div>`; }
+                else if (todayPlan.type === 'cheat') { focusContainer.innerHTML = `<div class="sleek-card flex items-center gap-5 !py-6 border-[#ef4444] shadow-[0_0_15px_rgba(239,68,68,0.15)]"><div class="w-14 h-14 rounded-full bg-[#ef4444] flex items-center justify-center text-white text-2xl shadow-[0_0_10px_rgba(239,68,68,0.5)]"><i class="fa-solid fa-burger"></i></div><div><div class="font-bold text-white text-xl">Cheat Day</div><div class="text-xs text-[#ef4444] mt-1 font-semibold">Enjoyed the rewards.</div></div></div>`; }
+            },
+
+            renderHistory() {
+                const today = new Date(); document.getElementById('cal-month-title').textContent = today.toLocaleString('default', { month: 'long', year: 'numeric' });
+                const grid = document.getElementById('calendar-grid'); grid.innerHTML = '';
+                const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).getDay(); const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+                for(let i=0; i<firstDay; i++) grid.innerHTML += `<div class="cal-day empty"></div>`; 
+                for(let i=1; i<=daysInMonth; i++) {
+                    const d = new Date(today.getFullYear(), today.getMonth(), i); const dateStr = this.formatDate(d);
+                    const isToday = dateStr === this.formatDate(today); const isSelected = dateStr === this.state.selectedCalendarDate;
+                    const record = this.state.history.find(h => h.date === dateStr);
+                    let dotHtml = record ? `<div class="cal-dot ${record.type}"></div>` : '';
+                    grid.innerHTML += `<div class="cal-day ${isToday ? 'is-today' : ''} ${isSelected ? 'selected' : ''}" onclick="app.selectCalendarDate('${dateStr}')">${i}${dotHtml}</div>`;
+                }
+                const completedWorkouts = this.state.history.filter(h => h.type === 'workout' && h.isCompleted);
+                document.getElementById('stat-workouts').textContent = completedWorkouts.length;
+                document.getElementById('stat-minutes').textContent = Math.round(completedWorkouts.reduce((sum, h) => sum + (h.duration||0), 0) / 60);
+                this.renderCalendarDetails();
+            },
+
+            selectCalendarDate(dateStr) { this.state.selectedCalendarDate = dateStr; this.renderHistory(); },
+
+            renderCalendarDetails() {
+                const content = document.getElementById('cal-detail-content'); const title = document.getElementById('cal-detail-title');
+                const selDate = this.state.selectedCalendarDate; title.textContent = selDate === this.formatDate(new Date()) ? "TODAY" : selDate;
+                const record = this.state.history.find(h => h.date === selDate);
+                
+                if(record) {
+                    let displayHtml = '';
+                    if(record.type === 'workout') {
+                        const statusText = record.isCompleted ? `<span class="text-[var(--accent)]">Completed (${Math.round(record.duration/60)}m)</span>` : `<span class="text-orange-400">Planned Routine</span>`;
+                        displayHtml = `<div class="sleek-card flex justify-between items-center !py-5 bg-[var(--bg-surface-elevated)] border-[var(--accent)] shadow-[0_0_15px_rgba(224,224,254,0.1)]"><div class="flex items-center gap-4"><div class="w-12 h-12 rounded-full bg-[var(--accent)] flex items-center justify-center text-black text-xl"><i class="fa-solid ${record.isCompleted ? 'fa-check' : 'fa-dumbbell'}"></i></div><div><div class="font-bold text-white text-lg">${record.menuName}</div><div class="text-xs font-semibold mt-1">${statusText}</div></div></div></div>`;
+                    } else if (record.type === 'rest') { displayHtml = `<div class="sleek-card flex items-center gap-4 !py-5"><div class="w-12 h-12 rounded-full bg-[#52525b] flex items-center justify-center text-white text-xl"><i class="fa-solid fa-bed"></i></div><div><div class="font-bold text-white text-lg">Rest Day</div><div class="text-xs text-[var(--text-secondary)] mt-1">Recovery is growth.</div></div></div>`; }
+                    else if (record.type === 'cheat') { displayHtml = `<div class="sleek-card flex items-center gap-4 !py-5 border-[#ef4444] shadow-[0_0_10px_rgba(239,68,68,0.2)]"><div class="w-12 h-12 rounded-full bg-[#ef4444] flex items-center justify-center text-white text-xl shadow-[0_0_10px_rgba(239,68,68,0.5)]"><i class="fa-solid fa-burger"></i></div><div><div class="font-bold text-white text-lg">Cheat Day</div><div class="text-xs text-[#ef4444] mt-1">Enjoyed the rewards.</div></div></div>`; }
+                    content.innerHTML = `${displayHtml}<button onclick="app.removePlan('${selDate}')" class="mt-2 w-full py-3 rounded-xl border border-[var(--border-color)] text-[var(--text-secondary)] text-sm font-bold hover:bg-[var(--bg-surface-elevated)] hover:text-white transition-colors"><i class="fa-solid fa-pen mr-2"></i> Edit / Reset Plan</button>`;
+                } else {
+                    content.innerHTML = `
+                        <div class="grid grid-cols-1 gap-3">
+                            <button onclick="app.showRoutineSelector('${selDate}')" class="sleek-card !py-4 flex items-center gap-4 hover:border-[var(--accent)] border border-transparent transition-colors group text-left">
+                                <div class="w-12 h-12 rounded-full bg-[var(--bg-surface-elevated)] flex items-center justify-center text-[var(--accent)] group-hover:bg-[var(--accent)] group-hover:text-black transition-colors"><i class="fa-solid fa-dumbbell text-xl"></i></div>
+                                <div><div class="font-bold text-white text-lg">Workout Day</div><div class="text-[10px] text-[var(--accent)] font-semibold mt-0.5 uppercase tracking-wider">Select Routine</div></div>
+                            </button>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button onclick="app.assignPlan('${selDate}', 'rest')" class="sleek-card !py-4 flex flex-col items-center justify-center gap-2 hover:bg-[#52525b]/20 hover:border-[#52525b] border border-transparent transition-colors"><i class="fa-solid fa-bed text-2xl text-[#a1a1aa]"></i><span class="font-bold text-sm text-white">Rest Day</span></button>
+                                <button onclick="app.assignPlan('${selDate}', 'cheat')" class="sleek-card !py-4 flex flex-col items-center justify-center gap-2 hover:bg-[#ef4444]/20 hover:border-[#ef4444] border border-transparent transition-colors"><i class="fa-solid fa-burger text-2xl text-[#ef4444]"></i><span class="font-bold text-sm text-white">Cheat Day</span></button>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+
+            assignPlan(dateStr, type) {
+                let record = this.state.history.find(h => h.date === dateStr);
+                if (!record) {
+                    this.state.history.push({ date: dateStr, type: type, duration: 0, isCompleted: true });
+                } else {
+                    record.type = type;
+                    record.isCompleted = true;
+                }
+                this.saveData();
+                this.renderHistory();
+                this.renderDashboard();
+            },
+
+            removePlan(dateStr) {
+                this.state.history = this.state.history.filter(h => h.date !== dateStr);
+                this.saveData();
+                this.renderHistory();
+                this.renderDashboard();
+            },
+
+            showRoutineSelector(dateStr) {
+                const content = document.getElementById('cal-detail-content');
+                let html = `<div class="text-[10px] text-[var(--text-secondary)] uppercase font-bold tracking-wider mb-2">Select a Routine</div>`;
+                const menus = [DEFAULT_MENU, ...this.state.customMenus];
+                menus.forEach(m => {
+                    html += `<button onclick="app.assignRoutinePlan('${dateStr}', '${m.id}')" class="w-full text-left sleek-card !py-3 mb-2 hover:border-[var(--accent)] transition-colors"><div class="font-bold text-white text-sm">${m.name}</div><div class="text-[10px] text-[var(--text-secondary)]">${m.sets} Sets • ${m.exercises.length} Exercises</div></button>`;
+                });
+                html += `<button onclick="app.renderCalendarDetails()" class="w-full py-2 text-[var(--text-secondary)] text-xs font-bold mt-2">Cancel</button>`;
+                content.innerHTML = html;
+            },
+
+            assignRoutinePlan(dateStr, menuId) {
+                let menu = menuId === 'default' ? DEFAULT_MENU : this.state.customMenus.find(m => m.id === menuId);
+                if (!menu) return;
+                
+                let record = this.state.history.find(h => h.date === dateStr);
+                if (!record) {
+                    this.state.history.push({ date: dateStr, type: 'workout', menuId: menu.id, menuName: menu.name, duration: 0, isCompleted: false });
+                } else {
+                    record.type = 'workout';
+                    record.menuId = menu.id;
+                    record.menuName = menu.name;
+                    record.isCompleted = false;
+                }
+                this.saveData();
+                this.renderHistory();
+                this.renderDashboard();
+            },
+
+            setCategoryFilter(cat) { 
+                this.state.currentCategoryFilter = cat; 
+                if (document.getElementById('builder-step-2').classList.contains('slide-active')) {
+                    this.renderBuilder(); 
+                } else if (document.getElementById('builder-step-4').classList.contains('slide-active')) {
+                    this.renderManageLibrary();
+                }
+            },
+
+            toggleExercise(id) {
+                const idx = this.state.builderSelectedExercises.indexOf(id);
+                if (idx > -1) {
+                    this.state.builderSelectedExercises.splice(idx, 1);
+                } else {
+                    this.state.builderSelectedExercises.push(id);
+                }
+            },
+
+            // Render category pills helper
+            renderCategoryPills(containerId) {
+                const container = document.getElementById(containerId); if (!container) return; container.innerHTML = '';
+                ['All', 'Chest', 'Back', 'Shoulders', 'Arms', 'Core / Abs', 'Legs', 'Cardio', 'Full Body', 'Custom'].forEach(cat => {
+                    const isActive = this.state.currentCategoryFilter === cat; const activeClasses = isActive ? 'bg-[var(--accent)] text-black border-[var(--accent)] active-pill' : 'bg-[var(--bg-surface)] text-[var(--text-secondary)] border-[var(--border-color)] hover:border-[var(--text-secondary)]';
+                    container.innerHTML += `<button type="button" onclick="app.setCategoryFilter('${cat}')" class="shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all border ${activeClasses} flex items-center gap-2">${getAnatomyIcon(cat, isActive, false)} ${cat}</button>`;
+                });
+            },
+
+            renderBuilder() {
+                this.renderCategoryPills('category-filters'); const container = document.getElementById('exercise-library'); container.innerHTML = '';
+                let filtered = this.getAllExercises(); if (this.state.currentCategoryFilter !== 'All') filtered = filtered.filter(ex => ex.category === this.state.currentCategoryFilter);
+                filtered.forEach(ex => {
+                    const isChecked = this.state.builderSelectedExercises.includes(ex.id) ? 'checked' : '';
+                    container.innerHTML += `<label class="block relative cursor-pointer group"><input type="checkbox" class="exercise-checkbox hidden" value="${ex.id}" ${isChecked} onchange="app.toggleExercise('${ex.id}')"><div class="sleek-card flex justify-between items-center !py-3 !px-4 hover:border-[var(--border-color)] transition-colors"><div class="flex items-center gap-4"><div class="w-12 h-12 rounded-full bg-[var(--bg-surface-elevated)] flex items-center justify-center text-[var(--text-secondary)] border border-[var(--border-color)]">${getAnatomyIcon(ex.category || 'Custom', false, false)}</div><div><div class="font-bold text-white text-sm">${ex.name}</div><div class="text-[10px] text-[var(--text-secondary)] uppercase mt-0.5">${ex.category || 'Custom'} • ${ex.defaultVal} ${ex.type === 'time' ? 'Sec' : 'Reps'}</div></div></div><div class="check-circle w-6 h-6 rounded-full border-2 border-[var(--border-color)] flex items-center justify-center transition-colors"><i class="fa-solid fa-check text-xs opacity-0 transition-opacity"></i></div></div></label>`;
+                });
+            },
+
+            renderManageLibrary() {
+                this.renderCategoryPills('category-filters-manage'); const container = document.getElementById('manage-exercise-library'); container.innerHTML = '';
+                let filtered = this.getAllExercises(); if (this.state.currentCategoryFilter !== 'All') filtered = filtered.filter(ex => ex.category === this.state.currentCategoryFilter);
+                filtered.forEach(ex => {
+                    container.innerHTML += `<div class="swipe-container mb-3 shadow-[0_4px_10px_rgba(0,0,0,0.3)]"><div class="swipe-actions right-0 w-[80px] flex justify-center items-center rounded-r-2xl"><button onclick="app.openCustomExercise('${ex.id}')" class="text-[var(--accent)] hover:text-white transition-colors w-full h-full flex flex-col items-center justify-center gap-1"><i class="fa-solid fa-pen text-lg"></i><span class="text-[9px] uppercase font-bold tracking-wider">Edit</span></button></div><div class="swipe-content flex justify-between items-center cursor-grab active:cursor-grabbing" ontouchstart="app.handleSwipeStart(event)" ontouchend="app.handleSwipeEnd(event)"><div class="flex items-center gap-4"><div class="w-12 h-12 rounded-full bg-[var(--bg-surface-elevated)] flex items-center justify-center text-[var(--text-secondary)] border border-[var(--border-color)] pointer-events-none">${getAnatomyIcon(ex.category || 'Custom', false, false)}</div><div class="pointer-events-none"><div class="font-bold text-white text-sm">${ex.name}</div><div class="text-[10px] text-[var(--text-secondary)] uppercase mt-0.5">${ex.category || 'Custom'} • ${ex.defaultVal} ${ex.type === 'time' ? 'Sec' : 'Reps'}</div></div></div><div class="flex flex-col items-center opacity-30 pointer-events-none"><i class="fa-solid fa-chevron-left text-[10px]"></i><span class="text-[8px] uppercase mt-1">Swipe</span></div></div></div>`;
+                });
+            },
+
+            handleSwipeStart(e) {
+                if(e.target.closest('button') || e.target.closest('input')) return;
+                this.touchStartX = e.changedTouches ? e.changedTouches[0].screenX : e.clientX;
+                this.touchStartY = e.changedTouches ? e.changedTouches[0].screenY : e.clientY;
+                document.querySelectorAll('.swiped-left').forEach(el => { if(el !== e.currentTarget.parentElement) el.classList.remove('swiped-left'); });
+            },
+            handleSwipeEnd(e) {
+                if(e.target.closest('button') || e.target.closest('input')) return;
+                const touchEndX = e.changedTouches ? e.changedTouches[0].screenX : e.clientX;
+                const touchEndY = e.changedTouches ? e.changedTouches[0].screenY : e.clientY;
+                const deltaX = touchEndX - this.touchStartX; const deltaY = Math.abs(touchEndY - this.touchStartY);
+                if (deltaY > 30) return; 
+                if (deltaX < -40) { e.currentTarget.parentElement.classList.add('swiped-left'); } 
+                else if (deltaX > 40) { e.currentTarget.parentElement.classList.remove('swiped-left'); } 
+                else if (Math.abs(deltaX) < 10) {
+                    const descEl = e.currentTarget.querySelector('.ex-description');
+                    if (descEl) { descEl.classList.toggle('hidden'); const chevron = e.currentTarget.querySelector('.fa-chevron-down, .fa-chevron-up'); if(chevron) { if(chevron.classList.contains('fa-chevron-down')) chevron.classList.replace('fa-chevron-down', 'fa-chevron-up'); else chevron.classList.replace('fa-chevron-up', 'fa-chevron-down'); } }
+                    e.currentTarget.parentElement.classList.remove('swiped-left');
+                }
+            },
+
+            inlinePromptRemoveEx(menuId, exIndex) {
+                const menu = this.state.customMenus.find(m => m.id === menuId);
+                const exName = menu.exercises[exIndex].name;
+                document.getElementById('confirm-title').textContent = "Remove Exercise?";
+                document.getElementById('confirm-desc').textContent = `Remove ${exName} from this routine?`;
+                document.getElementById('confirm-yes-btn').onclick = () => {
+                    menu.exercises.splice(exIndex, 1);
+                    this.saveData(); this.refreshInlineEdit(menuId);
+                    this.closeConfirm();
+                };
+                const overlay = document.getElementById('confirm-overlay'); const panel = document.getElementById('confirm-panel');
+                overlay.classList.remove('hidden'); setTimeout(() => { overlay.classList.remove('opacity-0'); panel.classList.remove('scale-95'); }, 10);
+            },
+            promptDeleteRoutine(id) {
+                document.getElementById('confirm-title').textContent = "Delete Routine?";
+                document.getElementById('confirm-desc').textContent = "This will permanently remove the plan from your list.";
+                document.getElementById('confirm-yes-btn').onclick = () => { this.state.customMenus = this.state.customMenus.filter(m => m.id !== id); this.saveData(); this.renderBuildRoutines(); this.renderDashboard(); this.closeConfirm(); };
+                const overlay = document.getElementById('confirm-overlay'); const panel = document.getElementById('confirm-panel'); overlay.classList.remove('hidden'); setTimeout(() => { overlay.classList.remove('opacity-0'); panel.classList.remove('scale-95'); }, 10);
+            },
+            closeConfirm() { const overlay = document.getElementById('confirm-overlay'); const panel = document.getElementById('confirm-panel'); overlay.classList.add('opacity-0'); panel.classList.add('scale-95'); setTimeout(() => overlay.classList.add('hidden'), 300); },
+
+            startWorkout(menuId) {
+                let menu = menuId === 'default' ? DEFAULT_MENU : this.state.customMenus.find(m => m.id === menuId); if(!menu) return;
+                this.state.activeWorkout = { menu, currentExerciseIndex: 0, currentSet: 1, timer: null, startTime: Date.now() };
+                document.getElementById('workout-overlay').classList.remove('hidden'); document.getElementById('workout-header-title').textContent = menu.name.toUpperCase(); this.renderCurrentExercise();
+            },
+            renderCurrentExercise() {
+                const { menu, currentExerciseIndex, currentSet } = this.state.activeWorkout; const ex = menu.exercises[currentExerciseIndex];
+                document.getElementById('exercise-name').innerHTML = `${ex.name} <span class="text-sm font-normal text-[var(--text-secondary)] ml-2">Set ${currentSet}/${menu.sets}</span>`;
+                document.getElementById('exercise-desc').textContent = ex.desc; document.getElementById('exercise-icon-container').innerHTML = getAnatomyIcon(ex.category || 'Custom', true, true);
+                const btn = document.getElementById('action-btn'); if (ex.type === 'reps') { btn.textContent = `DO ${ex.defaultVal} REPS`; btn.onclick = () => this.nextExercise(); } else { btn.textContent = `START ${ex.defaultVal}s`; btn.onclick = () => this.startTimer(ex.defaultVal); }
+                this.updateProgress();
+            },
+            updateProgress() {
+                const { menu, currentExerciseIndex, currentSet } = this.state.activeWorkout;
+                document.getElementById('workout-progress').style.width = `${(((currentSet - 1) * menu.exercises.length) + currentExerciseIndex) / (menu.exercises.length * menu.sets) * 100}%`;
+            },
+            startTimer(seconds) {
+                const btn = document.getElementById('action-btn'); let timeLeft = seconds; btn.onclick = null; btn.innerHTML = `<span class="pulse-text">${timeLeft}s</span>`;
+                this.state.activeWorkout.timer = setInterval(() => { timeLeft--; btn.innerHTML = `<span class="pulse-text">${timeLeft}s</span>`; if (timeLeft <= 0) { clearInterval(this.state.activeWorkout.timer); this.nextExercise(); } }, 1000);
+            },
+            nextExercise() {
+                this.state.activeWorkout.currentExerciseIndex++; const menu = this.state.activeWorkout.menu;
+                if (this.state.activeWorkout.currentExerciseIndex >= menu.exercises.length) { this.state.activeWorkout.currentSet++; if (this.state.activeWorkout.currentSet > menu.sets) { this.finishWorkout(); } else { this.state.activeWorkout.currentExerciseIndex = 0; this.startRest(menu.setRest, true); } } else { this.startRest(menu.rest, false); }
+            },
+            startRest(seconds, isSetRest) {
+                const { menu, currentExerciseIndex, currentSet } = this.state.activeWorkout; const nextEx = menu.exercises[currentExerciseIndex];
+                document.getElementById('exercise-name').textContent = isSetRest ? `Set ${currentSet} starts soon` : "Rest"; document.getElementById('exercise-desc').textContent = `Next: ${nextEx.name}`;
+                document.getElementById('exercise-icon-container').innerHTML = `<div class="w-24 h-24 flex items-center justify-center"><i class="fa-solid fa-bed text-6xl text-[var(--text-secondary)] drop-shadow-lg"></i></div>`;
+                const btn = document.getElementById('action-btn'); let timeLeft = seconds; btn.onclick = () => { clearInterval(this.state.activeWorkout.timer); this.renderCurrentExercise(); };
+                const updateBtn = () => { btn.innerHTML = `REST <span class="text-white ml-2">${timeLeft}s</span><div class="text-[10px] uppercase mt-1 text-[var(--bg-base)] opacity-70">Tap to skip</div>`; }; updateBtn();
+                this.state.activeWorkout.timer = setInterval(() => { timeLeft--; updateBtn(); if (timeLeft <= 0) { clearInterval(this.state.activeWorkout.timer); this.renderCurrentExercise(); } }, 1000);
+            },
+            finishWorkout() {
+                document.getElementById('workout-progress').style.width = '100%'; document.getElementById('exercise-name').textContent = "Workout Complete!"; document.getElementById('exercise-desc').textContent = "Excellent job."; document.getElementById('exercise-icon-container').innerHTML = `<div class="w-24 h-24 flex items-center justify-center"><i class="fa-solid fa-trophy text-6xl text-[var(--accent)] drop-shadow-[0_0_20px_var(--accent-glow)]"></i></div>`;
+                const btn = document.getElementById('action-btn'); btn.textContent = "FINISH"; btn.onclick = () => this.endWorkout(true);
+            },
+            endWorkout(completed = false) {
+                if (this.state.activeWorkout.timer) clearInterval(this.state.activeWorkout.timer);
+                if (completed) { const today = this.formatDate(new Date()); const duration = Math.floor((Date.now() - this.state.activeWorkout.startTime) / 1000); let record = this.state.history.find(h => h.date === today); if (record && record.type === 'workout') { record.isCompleted = true; record.duration = duration; record.menuName = this.state.activeWorkout.menu.name; record.menuId = this.state.activeWorkout.menu.id; } else { if (record) this.state.history = this.state.history.filter(h => h.date !== today); this.state.history.push({ date: today, type: 'workout', menuId: this.state.activeWorkout.menu.id, menuName: this.state.activeWorkout.menu.name, duration: duration, isCompleted: true }); } if (this.state.lastWorkoutDate !== today) { this.state.streak++; this.state.lastWorkoutDate = today; } this.saveData(); this.renderDashboard(); this.renderHistory(); }
+                document.getElementById('workout-overlay').classList.add('hidden'); this.state.activeWorkout = null;
+            },
+
+            openCustomExercise(editId = null) {
+                if (editId && typeof editId === 'string') { let ex = this.getAllExercises().find(e => e.id === editId); if (ex) { document.getElementById('ce-modal-title').textContent = "Edit Exercise"; document.getElementById('ce-name').value = ex.name; document.getElementById('ce-category').value = ex.category || 'Custom'; document.getElementById('ce-desc').value = ex.desc || ''; document.querySelector(`input[name="ce-type"][value="${ex.type}"]`).checked = true; document.getElementById('ce-amount').textContent = ex.defaultVal; this.state.editingExerciseId = editId; document.getElementById('ce-save-btn').textContent = "Save Changes"; } } else { document.getElementById('ce-modal-title').textContent = "New Exercise"; document.getElementById('ce-name').value = ''; document.getElementById('ce-desc').value = ''; document.getElementById('ce-category').value = 'Custom'; document.getElementById('ce-amount').textContent = '15'; document.querySelector('input[name="ce-type"][value="reps"]').checked = true; this.state.editingExerciseId = null; document.getElementById('ce-save-btn').textContent = "Add to Library"; }
+                const overlay = document.getElementById('custom-ex-overlay'); const panel = document.getElementById('custom-ex-panel'); overlay.classList.remove('hidden'); setTimeout(() => { overlay.classList.remove('opacity-0'); panel.classList.remove('scale-95'); }, 10);
+            },
+            closeCustomExercise() { const overlay = document.getElementById('custom-ex-overlay'); const panel = document.getElementById('custom-ex-panel'); overlay.classList.add('opacity-0'); panel.classList.add('scale-95'); setTimeout(() => overlay.classList.add('hidden'), 300); this.state.editingExerciseId = null; },
+            adjustCEAmount(delta) { this.adjustSetting('ce-amount', delta, 1); },
+            saveCustomExercise() {
+                const name = document.getElementById('ce-name').value.trim(); if (!name) { const btn = document.getElementById('ce-save-btn'); const origHtml = btn.innerHTML; btn.innerHTML = 'Name Required!'; btn.classList.add('!bg-red-500', '!shadow-[0_4px_20px_rgba(239,68,68,0.4)]'); setTimeout(() => { btn.innerHTML = origHtml; btn.classList.remove('!bg-red-500', '!shadow-[0_4px_20px_rgba(239,68,68,0.4)]'); }, 2000); return; }
+                const newEx = { id: this.state.editingExerciseId || ('ce_' + Date.now()), name, type: document.querySelector('input[name="ce-type"]:checked').value, defaultVal: parseInt(document.getElementById('ce-amount').textContent), desc: document.getElementById('ce-desc').value.trim() || 'Custom Exercise', category: document.getElementById('ce-category').value };
+                const existingIdx = this.state.customExercises.findIndex(ex => ex.id === newEx.id); if (existingIdx > -1) { this.state.customExercises[existingIdx] = newEx; } else { this.state.customExercises.push(newEx); }
+                this.saveData(); if (document.getElementById('builder-step-2').classList.contains('slide-active')) this.renderBuilder(); if (document.getElementById('builder-step-4').classList.contains('slide-active')) this.renderManageLibrary(); this.closeCustomExercise();
+            }
+        };
+        document.addEventListener('DOMContentLoaded', () => { app.init(); });
+    </script>
+</body>
+</html>
